@@ -7,8 +7,8 @@
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAXAdUbLQhNDbcVx1Ue9KF-BpUM06t7lxQ&sensor=false"></script>
 <style>
-#slider {width: 50%;}
-#map-canvas {height:500px; width:500px;}
+#slider {width: 80%; margin: 40px;}
+#map-canvas {height:700px; width:100%;}
 </style>
 <script>
 var tracks = [];
@@ -16,6 +16,7 @@ var files = 0;
 var filesread = 0;
 var map;
 var markers = {};
+var path = null;
 
 // Haversine
 // http://stackoverflow.com/questions/5260423/torad-javascript-function-throwing-error
@@ -39,6 +40,18 @@ function checkdone() {
   filesread += 1;
   if (filesread < files)
     return;
+  var bounds = new google.maps.LatLngBounds();
+  bounds.extend(new google.maps.LatLng(tracks[0][0].lat,tracks[0][0].lon));
+  bounds.extend(new google.maps.LatLng(tracks[0][tracks[0].length-1].lat,tracks[0][tracks[0].length-1].lon));
+  map.fitBounds(bounds);
+  path = new google.maps.Polyline({
+    path: tracks[0].map(function (d) { return new google.maps.LatLng(d.lat,d.lon); }),
+    geodesic: true,
+    strokeColor: '#FF0000',
+    strokeOpacity: 1.0,
+    strokeWeight: 2,
+    map: map
+  });
   $("#slider").slider({
     max: Math.max.apply(Math,tracks.map(function(d) { return d[d.length-1].ts; })),
     slide: function(e, ui) {
@@ -71,7 +84,7 @@ function checkdone() {
         distlist.push(totdist);
       }
       $("#delta").html((Math.max.apply(Math,distlist)-Math.min.apply(Math,distlist)).toFixed(2) + "mi");
-      var bounds = new google.maps.LatLngBounds ();
+      var bounds = new google.maps.LatLngBounds();
       for (var i = 0; i < lllist.length; i++) {
         bounds.extend(lllist[i]);
       }
@@ -135,7 +148,11 @@ $(document).ready(function () {
       return;
     files = gpxf.length;
     filesread = 0;
+    for (var m in markers) markers[m].setMap(null);
     markers = {};
+    if (path) path.setMap(null);
+    path = null;
+    tracks = [];
     $.each(gpxf.files, function(i, f) {
       var reader = new FileReader();
       var fname = f.name;
