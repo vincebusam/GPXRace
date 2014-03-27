@@ -43,7 +43,7 @@ function checkdone() {
             totdist += distance(tracks[i][j].lat,tracks[i][j].lon,tracks[i][j-1].lat,tracks[i][j-1].lon) * 0.621371; // Convert to miles
           if (tracks[i][j].ts >= ui.value || j==tracks[i].length-1) {
             if (j>0 && (Math.abs(tracks[i][j-1].ts-ui.value))<(Math.abs(tracks[i][i].ts-ui.value))) j -= 1;
-            $("#coords").append(tracks[i][j].lat + "," + tracks[i][j].lon + " " + totdist.toFixed(2) + "mi<br>");
+            $("#coords").append(tracks[i][j].name + ": " + tracks[i][j].lat + "," + tracks[i][j].lon + " " + totdist.toFixed(2) + "mi<br>");
             break;
           }
         }
@@ -60,8 +60,10 @@ $(document).ready(function () {
     if (gpxf.files == undefined || gpxf.length == 0)
       return;
     files = gpxf.length;
+    filesread = 0;
     $.each(gpxf.files, function(i, f) {
       var reader = new FileReader();
+      var fname = f.name;
       reader.onload = function(event) {
         var gpx = $.parseXML(event.target.result);
         var starttime = new Date($(gpx).find("trkseg").eq(0).children().eq(0).find("time").text());
@@ -71,6 +73,7 @@ $(document).ready(function () {
             track.push({
               lat: $(d).attr("lat"),
               lon: $(d).attr("lon"),
+              name: fname,
               ts: new Date($(d).find("time").text()) - starttime
             });
           });
