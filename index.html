@@ -45,6 +45,8 @@ function checkdone() {
       $("#time").html(formattime(ui.value));
       $("#coords").html("");
       var lllist = [];
+      var distlist = [];
+      $("#units").text("Time");
       for (var i=0; i<tracks.length; i++) {
         var totdist = 0;
         for (var j=0; j<tracks[i].length; j++) {
@@ -66,7 +68,9 @@ function checkdone() {
             break;
           }
         }
+        distlist.push(totdist);
       }
+      $("#delta").html((Math.max.apply(Math,distlist)-Math.min.apply(Math,distlist)).toFixed(2) + "mi");
       var bounds = new google.maps.LatLngBounds ();
       for (var i = 0; i < lllist.length; i++) {
         bounds.extend(lllist[i]);
@@ -82,8 +86,10 @@ $(document).ready(function () {
   map = new google.maps.Map(document.getElementById("map-canvas"), {center: new google.maps.LatLng(33.98, -118.42), zoom: 10, maxZoom: 17});
   google.maps.event.addListener(map, 'click', function(event) {
     $("#time").html("");
-    lllist = [];
+    var lllist = [];
     $("#coords").html("");
+    var tslist = []
+    $("#units").text("Distance");
     for (var i=0; i<tracks.length; i++) {
       var closest = 0;
       var closedist = -1;
@@ -98,6 +104,7 @@ $(document).ready(function () {
         }
       }
       var j = closest;
+      tslist.push(tracks[i][j].ts);
       $("#coords").append(tracks[i][j].name + ": " + formattime(tracks[i][j].ts) + "<br>");
       if (markers[tracks[i][j].name] == undefined) {
         markers[tracks[i][j].name] = new google.maps.Marker({
@@ -109,7 +116,18 @@ $(document).ready(function () {
         markers[tracks[i][j].name].setPosition(new google.maps.LatLng(tracks[i][j].lat,tracks[i][j].lon));
       }
       lllist.push(new google.maps.LatLng(tracks[i][j].lat,tracks[i][j].lon));
+      var totdist = 0;
+      for (var j=1; j<= closest; j++) {
+        totdist += distance(tracks[i][j].lat,tracks[i][j].lon,tracks[i][j-1].lat,tracks[i][j-1].lon) * 0.621371; // Convert to miles
+      }
+      $("#time").html(totdist.toFixed(2)+"mi");
     }
+    $("#delta").html(formattime(Math.max.apply(Math,tslist)-Math.min.apply(Math,tslist)));
+    var bounds = new google.maps.LatLngBounds ();
+    for (var i = 0; i < lllist.length; i++) {
+      bounds.extend(lllist[i]);
+    }
+    map.fitBounds(bounds);
   });
   $("#load").click(function () {
     var gpxf = $("#gpxfiles")[0];
@@ -158,7 +176,11 @@ GPX Files: <input type="file" id="gpxfiles" size="20" multiple><br>
 
 <div id="data">
 <div id="slider"></div>
+<div id="summary">
+<span id="units">Time</span>:<span id="time"></span> Difference: <span id="delta"></span>
+</div>
 <div id="time"></div>
+<div id="delta"></div>
 <div id="coords"></div>
 </div>
 
