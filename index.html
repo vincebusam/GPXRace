@@ -5,13 +5,17 @@
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAXAdUbLQhNDbcVx1Ue9KF-BpUM06t7lxQ&sensor=false"></script>
 <style>
 #slider {width: 50%;}
+#map-canvas {height:500px; width:500px;}
 </style>
 <script>
 var tracks = [];
 var files = 0;
 var filesread = 0;
+var map;
+var markers = {};
 
 // Haversine
 // http://stackoverflow.com/questions/5260423/torad-javascript-function-throwing-error
@@ -36,6 +40,7 @@ function checkdone() {
     slide: function(e, ui) {
       $("#time").html(Math.floor((ui.value/(1000*60*60))/24)+":"+("0"+Math.floor((ui.value/(1000*60))%60)).slice(-2)+":"+("0"+Math.floor((ui.value/1000)%60)).slice(-2));
       $("#coords").html("");
+      var lllist = [];
       for (var i=0; i<tracks.length; i++) {
         var totdist = 0;
         for (var j=0; j<tracks[i].length; j++) {
@@ -44,10 +49,25 @@ function checkdone() {
           if (tracks[i][j].ts >= ui.value || j==tracks[i].length-1) {
             if (j>0 && (Math.abs(tracks[i][j-1].ts-ui.value))<(Math.abs(tracks[i][i].ts-ui.value))) j -= 1;
             $("#coords").append(tracks[i][j].name + ": " + tracks[i][j].lat + "," + tracks[i][j].lon + " " + totdist.toFixed(2) + "mi<br>");
+            if (markers[tracks[i][j].name] == undefined) {
+              markers[tracks[i][j].name] = new google.maps.Marker({
+                position: new google.maps.LatLng(tracks[i][j].lat,tracks[i][j].lon),
+                map: map,
+                title: tracks[i][j].name
+              });
+            } else {
+              markers[tracks[i][j].name].setPosition(new google.maps.LatLng(tracks[i][j].lat,tracks[i][j].lon));
+            }
+            lllist.push(new google.maps.LatLng(tracks[i][j].lat,tracks[i][j].lon));
             break;
           }
         }
       }
+      var bounds = new google.maps.LatLngBounds ();
+      for (var i = 0; i < lllist.length; i++) {
+        bounds.extend(lllist[i]);
+      }
+      map.fitBounds(bounds);
     }
   });
   $("#data").show();
@@ -55,12 +75,14 @@ function checkdone() {
 
 $(document).ready(function () {
   $("#data").hide();
+  map = new google.maps.Map(document.getElementById("map-canvas"), {center: new google.maps.LatLng(33.98, -118.42), zoom: 10, maxZoom: 17});
   $("#load").click(function () {
     var gpxf = $("#gpxfiles")[0];
     if (gpxf.files == undefined || gpxf.length == 0)
       return;
     files = gpxf.length;
     filesread = 0;
+    markers = {};
     $.each(gpxf.files, function(i, f) {
       var reader = new FileReader();
       var fname = f.name;
@@ -104,6 +126,8 @@ GPX Files: <input type="file" id="gpxfiles" size="20" multiple><br>
 <div id="time"></div>
 <div id="coords"></div>
 </div>
+
+<div id="map-canvas"></div>
 
 </body>
 </html>
