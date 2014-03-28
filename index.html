@@ -6,9 +6,10 @@
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAXAdUbLQhNDbcVx1Ue9KF-BpUM06t7lxQ&sensor=false"></script>
+<script src="http://code.highcharts.com/highcharts.js"></script>
 <style>
 #slider {width: 80%; margin: 40px;}
-#map-canvas {height:700px; width:100%;}
+#map-canvas {height:700px; width:80%; margin: 20px;}
 </style>
 <script>
 var tracks = [];
@@ -33,7 +34,45 @@ function distance(lat1, lon1, lat2, lon2) {
 }
 
 function formattime(ts) {
-  return Math.floor((ts/(1000*60*60))/24)+":"+("0"+Math.floor((ts/(1000*60))%60)).slice(-2)+":"+("0"+Math.floor((ts/1000)%60)).slice(-2);
+  var sign=""
+  if (ts < 0) {
+    sign="-";
+    ts=Math.abs(ts);
+  }
+  return sign+Math.floor((ts/(1000*60*60))/24)+":"+("0"+Math.floor((ts/(1000*60))%60)).slice(-2)+":"+("0"+Math.floor((ts/1000)%60)).slice(-2);
+}
+
+function drawgraph() {
+  var ref = $("#referencetrack").val();
+  var series = [];
+  for (var i=0; i<tracks.length; i++) {
+    var data = [];
+    for (var j=0; j<tracks[i].length; j++) {
+      if (i==ref) {
+        data.push([tracks[i][j].dist,0]);
+        continue;
+      }
+      var mind = tracks[i][tracks[i].length-1].dist + 100;
+      var minref = -1;
+      for (var k=0; k<tracks[ref].length; k++) {
+        var diff = Math.abs(tracks[i][j].dist-tracks[ref][k].dist);
+        if (diff < mind) {
+          mind = diff;
+          minref = k;
+        }
+      }
+      data.push([tracks[i][j].dist,tracks[i][j].ts-tracks[ref][minref].ts]);
+    }
+    series.push({data: data, name: tracks[i][0].name});
+  }
+  $("#chart").highcharts({
+    title: { text: "Time difference over distance" },
+    xAxis: { title: { text: "Distance (mi)" } },
+    yAxis: { title: { text: "Time" }, labels: { formatter: function() { return formattime(this.value); } } },
+    plotOptions: { line: { marker: { enabled: false } } },
+    tooltip: { formatter: function() { return this.x.toFixed(2) + "mi<br/>" + this.series.name + ": " + formattime(this.y); } },
+    series: series
+  });
 }
 
 function checkdone() {
@@ -52,6 +91,9 @@ function checkdone() {
     strokeWeight: 2,
     map: map
   });
+  for (var i=0; i<tracks.length; i++) {
+    $("#referencetrack").append("<option value="+i+">"+tracks[i][0].name+"</option>");
+  }
   $("#slider").slider({
     max: Math.max.apply(Math,tracks.map(function(d) { return d[d.length-1].ts; })),
     slide: function(e, ui) {
@@ -92,6 +134,7 @@ function checkdone() {
     }
   });
   $("#data").show();
+  drawgraph();
 }
 
 $(document).ready(function () {
@@ -103,6 +146,7 @@ $(document).ready(function () {
     $("#coords").html("");
     var tslist = []
     $("#units").text("Distance");
+    $("#referencetrack").html("");
     for (var i=0; i<tracks.length; i++) {
       var closest = 0;
       var closedist = -1;
@@ -144,9 +188,9 @@ $(document).ready(function () {
   });
   $("#load").click(function () {
     var gpxf = $("#gpxfiles")[0];
-    if (gpxf.files == undefined || gpxf.length == 0)
+    if (gpxf.files == undefined || gpxf.files.length == 0)
       return;
-    files = gpxf.length;
+    files = gpxf.files.length;
     filesread = 0;
     for (var m in markers) markers[m].setMap(null);
     markers = {};
@@ -170,6 +214,10 @@ $(document).ready(function () {
             });
           });
         });
+        track[0].dist = 0;
+        for (var i=1; i<track.length; i++) {
+          track[i].dist = track[i-1].dist + (distance(track[i].lat,track[i].lon,track[i-1].lat,track[i-1].lon) * 0.621371); //Miles
+        }
         tracks.push(track);
         checkdone();
       };
@@ -179,6 +227,7 @@ $(document).ready(function () {
       reader.readAsText(f);
     });
   });
+  $("#referencetrack").change(drawgraph);
 });
 </script>
 <head>
@@ -202,6 +251,10 @@ GPX Files: <input type="file" id="gpxfiles" size="20" multiple><br>
 </div>
 
 <div id="map-canvas"></div>
+
+<select id="referencetrack"></select>
+
+<div id="chart"></div>
 
 </body>
 </html>
