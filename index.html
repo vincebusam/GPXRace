@@ -115,6 +115,7 @@ function checkdone() {
   filesread += 1;
   if (filesread < files)
     return;
+  $("#referencetrack").show();
   var bounds = new google.maps.LatLngBounds();
   bounds.extend(new google.maps.LatLng(tracks[0][0].lat,tracks[0][0].lon));
   bounds.extend(new google.maps.LatLng(tracks[0][tracks[0].length-1].lat,tracks[0][tracks[0].length-1].lon));
@@ -179,6 +180,7 @@ function checkdone() {
 
 $(document).ready(function () {
   $("#data").hide();
+  $("#referencetrack").hide();
   map = new google.maps.Map(document.getElementById("map-canvas"), {center: new google.maps.LatLng(33.98, -118.42), zoom: 10, maxZoom: 17});
   google.maps.event.addListener(map, 'click', function(event) {
     $("#time").html("");
