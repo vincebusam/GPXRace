@@ -18,6 +18,14 @@ var filesread = 0;
 var map;
 var markers = {};
 var path = null;
+var markericons = [
+  "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+  "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+  "http://maps.google.com/mapfiles/ms/icons/purple-dot.png",
+  "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png",
+  "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+];
+var curmarker = 0;
 
 // Haversine
 // http://stackoverflow.com/questions/5260423/torad-javascript-function-throwing-error
@@ -114,8 +122,12 @@ function checkdone() {
               markers[tracks[i][j].name] = new google.maps.Marker({
                 position: new google.maps.LatLng(tracks[i][j].lat,tracks[i][j].lon),
                 map: map,
-                title: tracks[i][j].name
+                title: tracks[i][j].name,
+                icon: markericons[curmarker]
               });
+              curmarker += 1;
+              if (curmarker >= markericons.length)
+                curmarker = 0;
             } else {
               markers[tracks[i][j].name].setPosition(new google.maps.LatLng(tracks[i][j].lat,tracks[i][j].lon));
             }
@@ -167,8 +179,12 @@ $(document).ready(function () {
         markers[tracks[i][j].name] = new google.maps.Marker({
           position: new google.maps.LatLng(tracks[i][j].lat,tracks[i][j].lon),
           map: map,
-          title: tracks[i][j].name
+          title: tracks[i][j].name,
+          icon: markericons[curmarker]
         });
+        curmarker += 1;
+        if (curmarker >= markericons.length)
+          curmarker = 0;
       } else {
         markers[tracks[i][j].name].setPosition(new google.maps.LatLng(tracks[i][j].lat,tracks[i][j].lon));
       }
